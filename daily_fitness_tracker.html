@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Fitness Tracker</title>
+<style>
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:#f4f7fb;color:#18212f}
+.wrap{max-width:760px;margin:auto;padding:18px}
+.card{background:white;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000010}
+h1{margin:0 0 6px;font-size:25px} h2{font-size:19px;margin:0 0 12px}
+.sub{color:#657184}.row{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;background:#f7f9fc;padding:12px;border-radius:12px}
+label{font-size:13px;color:#657184;display:block;margin-bottom:4px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d9e0e9;border-radius:9px;font-size:15px}
+.item{display:grid;grid-template-columns:32px 1fr 115px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0f4}
+.item:last-child{border-bottom:0}
+input[type=checkbox]{width:22px;height:22px;accent-color:#2563eb}
+.done{opacity:.58;text-decoration:line-through}
+.progress{height:13px;background:#e8edf4;border-radius:99px;overflow:hidden}
+.bar{height:100%;width:0;background:#2563eb;transition:.25s}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
+.primary{background:#2563eb;color:white}.reset{background:#eef2f7;color:#273244}
+.small{font-size:13px;color:#657184}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>🏠 Daily Fitness Tracker</h1>
+<div class="sub">প্রতিদিনের খাবার, ব্যায়াম ও ঘুম ট্র্যাক করো</div>
+<div class="row" style="margin-top:14px">
+<div class="stat"><label>📅 তারিখ</label><input id="date" type="date"></div>
+<div class="stat"><label>⚖️ আজকের ওজন (kg)</label><input id="weight" type="number" step="0.1" placeholder="যেমন 47"></div>
+<div class="stat"><label>😴 ঘুম (ঘণ্টা)</label><input id="sleep" type="number" step="0.5" placeholder="যেমন 8"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>📊 আজকের Progress</h2>
+<div><b id="pct">0%</b> সম্পন্ন</div>
+<div class="progress" style="margin-top:8px"><div class="bar" id="bar"></div></div>
+</div>
+
+<div class="card">
+<h2>🍳 খাবারের ট্র্যাকার</h2>
+<div id="food"></div>
+</div>
+
+<div class="card">
+<h2>🏋️ Workout Tracker</h2>
+<div id="workout"></div>
+</div>
+
+<div class="card">
+<h2>📝 আজকের নোট</h2>
+<textarea id="notes" rows="4" style="width:100%;box-sizing:border-box;border:1px solid #d9e0e9;border-radius:10px;padding:10px;font:inherit" placeholder="আজ কেমন লাগলো, কী কী খেয়েছ, কোনো সমস্যা হয়েছে কিনা..."></textarea>
+</div>
+
+<div class="row">
+<button class="primary" onclick="save()">💾 Save today</button>
+<button class="reset" onclick="resetToday()">↻ Reset today</button>
+</div>
+<p class="small">তোমার তথ্য এই ব্রাউজারেই সংরক্ষণ হবে। অন্য ফোন/ব্রাউজারে নিজে থেকে যাবে না।</p>
+</div>
+
+<script>
+const foods=[
+["🌅","সকাল — ডিম","২টা"],["","সকাল — রুটি/ভাত","পরিমাণ লিখো"],
+["","সকাল — কলা","১টা"],["","সকাল — দুধ","১ গ্লাস"],
+["🍛","দুপুর — ভাত","গ্রাম লিখো"],["","দুপুর — মাছ/মুরগি","গ্রাম লিখো"],
+["","দুপুর — ডাল","১ বাটি"],["","দুপুর — সবজি","১ বাটি"],
+["🥛","বিকেল — কলা","১টা"],["","বিকেল — দুধ/দই","পরিমাণ লিখো"],
+["","বিকেল — খেজুর","২–৩টা"],["","বিকেল — কাজু/বাদাম","অল্প"],
+["🌙","রাত — ভাত","গ্রাম লিখো"],["","রাত — মাছ/মুরগি/ডিম","পরিমাণ লিখো"],
+["","রাত — ডাল","১ বাটি"],["","রাত — সবজি","১ বাটি"]
+];
+const workouts=[
+["Bodyweight Squat","3 × 10"],["Push-up","3 × 5–10"],["Backpack Row","3 × 10"],
+["Glute Bridge","3 × 12"],["Calf Raise","2 × 15"],["Plank","3 × 20–30 sec"]
+];
+function makeItems(arr,id){
+ const box=document.getElementById(id);
+ box.innerHTML=arr.map((x,i)=>{
+  let name=id==="food"?x[1]:x[0], hint=id==="food"?x[2]:x[1];
+  return `<div class="item"><input type="checkbox" data-group="${id}" data-i="${i}" onchange="update()">
+  <div><b>${id==="food"?x[0]+" ":""}${name}</b><div class="small">${hint}</div></div>
+  <input data-amount="${id}-${i}" placeholder="আজ কতটুকু?"></div>`
+ }).join("");
+}
+makeItems(foods,"food"); makeItems(workouts,"workout");
+
+const date=document.getElementById("date");
+date.value=new Date().toISOString().slice(0,10);
+
+function key(){return "fitness-"+date.value}
+function update(){
+ let checks=[...document.querySelectorAll('input[type=checkbox]')];
+ checks.forEach(c=>c.parentElement.classList.toggle("done",c.checked));
+ let n=checks.filter(c=>c.checked).length, p=Math.round(n/checks.length*100);
+ document.getElementById("pct").textContent=p+"%"; document.getElementById("bar").style.width=p+"%";
+ save(false);
+}
+function save(show=true){
+ let data={weight:weight.value,sleep:sleep.value,notes:notes.value,checks:[],amounts:{}};
+ document.querySelectorAll('input[type=checkbox]').forEach(c=>data.checks.push(c.checked));
+ document.querySelectorAll('[data-amount]').forEach(x=>data.amounts[x.dataset.amount]=x.value);
+ localStorage.setItem(key(),JSON.stringify(data));
+ if(show) alert("আজকের হিসাব Save হয়েছে ✅");
+}
+function load(){
+ let d=JSON.parse(localStorage.getItem(key())||"null");
+ document.querySelectorAll('input[type=checkbox]').forEach((c,i)=>c.checked=!!d?.checks?.[i]);
+ document.querySelectorAll('[data-amount]').forEach(x=>x.value=d?.amounts?.[x.dataset.amount]||"");
+ weight.value=d?.weight||""; sleep.value=d?.sleep||""; notes.value=d?.notes||""; update();
+}
+function resetToday(){
+ if(confirm("আজকের সব তথ্য মুছে ফেলবে?")){
+  localStorage.removeItem(key()); location.reload();
+ }
+}
+date.addEventListener("change",load);
+["weight","sleep","notes"].forEach(id=>document.getElementById(id).addEventListener("input",()=>save(false)));
+document.querySelectorAll('[data-amount]').forEach(x=>x.addEventListener("input",()=>save(false)));
+load();
+</script>
+</body>
+</html>
